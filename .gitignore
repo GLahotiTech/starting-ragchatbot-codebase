@@ -31,3 +31,4 @@ uploads/
 Thumbs.db
 
 .codegraph/
+.playwright-mcp/

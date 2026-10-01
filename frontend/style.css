@@ -290,6 +290,31 @@ header h1 {
     line-height: 1.6;
 }
 
+.message-content a {
+    color: var(--primary-color);
+    text-decoration: underline;
+    text-decoration-color: rgba(95, 179, 166, 0.4);
+    text-underline-offset: 3px;
+    overflow-wrap: anywhere;
+    transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.message-content a:hover {
+    color: #7fcbbf;
+    text-decoration-color: currentColor;
+}
+
+.message-content a:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+.message.user .message-content a {
+    color: var(--text-primary);
+    text-decoration-color: rgba(236, 232, 225, 0.5);
+}
+
 .message-content code {
     background-color: rgba(0, 0, 0, 0.2);
     padding: 0.125rem 0.25rem;
@@ -459,31 +484,56 @@ header h1 {
     margin: 0.5rem 0;
 }
 
-/* Sidebar Headers */
+/* Sidebar Headers (teal text with a trailing rule, echoing the New Chat button) */
 .stats-header,
 .suggested-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    color: var(--primary-color);
     font-size: 0.875rem;
     font-weight: 600;
-    color: var(--text-secondary);
+    line-height: normal;
+    text-align: left;
     cursor: pointer;
-    padding: 0.5rem 0;
-    border: none;
-    background: none;
     list-style: none;
     outline: none;
+    user-select: none;
     transition: color 0.2s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
-.stats-header:focus,
-.suggested-header:focus {
-    color: var(--primary-color);
+.stats-header::after,
+.suggested-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--primary-color);
+    opacity: 0.35;
+    transition: opacity 0.2s ease;
 }
 
 .stats-header:hover,
-.suggested-header:hover {
-    color: var(--primary-color);
+.suggested-header:hover,
+.stats-header:focus-visible,
+.suggested-header:focus-visible {
+    color: var(--primary-hover);
+}
+
+.stats-header:hover::after,
+.suggested-header:hover::after,
+.stats-header:focus-visible::after,
+.suggested-header:focus-visible::after {
+    opacity: 0.7;
+}
+
+.stats-header:focus-visible,
+.suggested-header:focus-visible {
+    box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .stats-header::-webkit-details-marker,
@@ -495,7 +545,6 @@ header h1 {
 .suggested-header::before {
     content: '▶';
     display: inline-block;
-    margin-right: 0.5rem;
     transition: transform 0.2s ease;
     font-size: 0.75rem;
 }

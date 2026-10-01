@@ -121,6 +121,107 @@ class CourseSearchTool(Tool):
         
         return "\n\n".join(formatted)
 
+
+class CourseOutlineTool(Tool):
+    """Tool for retrieving a course's outline (link and lesson list) from the course catalog"""
+
+    def __init__(self, vector_store: VectorStore):
+        self.store = vector_store
+        self.last_sources = []  # Track sources from last outline lookup
+
+    def get_tool_definition(self) -> Dict[str, Any]:
+        """Return Anthropic tool definition for this tool"""
+        return {
+            "name": "get_course_outline",
+            "description": "Get a course's outline: its title, link, and the complete list of lessons (number and title), each with a content excerpt for summarizing",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "course_title": {
+                        "type": "string",
+                        "description": "Course title (partial matches work, e.g. 'MCP', 'Introduction')"
+                    }
+                },
+                "required": ["course_title"]
+            }
+        }
+
+    def execute(self, course_title: str) -> str:
+        """
+        Look up the outline for the best-matching course.
+
+        Args:
+            course_title: Course title or partial name
+
+        Returns:
+            Formatted course outline or error message
+        """
+        import json
+
+        # Resolve the (possibly partial) name to an exact catalog title
+        resolved_title = self.store._resolve_course_name(course_title)
+        if not resolved_title:
+            return f"No course found matching '{course_title}'"
+
+        try:
+            results = self.store.course_catalog.get(ids=[resolved_title])
+        except Exception as e:
+            return f"Error retrieving course outline: {str(e)}"
+
+        if not results or not results.get('metadatas'):
+            return f"No course found matching '{course_title}'"
+
+        metadata = results['metadatas'][0]
+        course_link = metadata.get('course_link')
+        lessons = json.loads(metadata.get('lessons_json') or "[]")
+
+        lines = [f"Course: {resolved_title}"]
+        lines.append(f"Course Link: {course_link or 'N/A'}")
+        lines.append(f"Lessons ({len(lessons)}):")
+        for lesson in sorted(lessons, key=lambda l: l.get('lesson_number', 0)):
+            lesson_number = lesson.get('lesson_number')
+            lines.append(f"- Lesson {lesson_number}: {lesson.get('lesson_title')}")
+            excerpt = self._get_lesson_excerpt(resolved_title, lesson_number)
+            if excerpt:
+                lines.append(f"  Excerpt: {excerpt}")
+
+        # Store the course as a source for the UI
+        self.last_sources = [{"title": resolved_title, "link": course_link}]
+
+        return "\n".join(lines)
+
+    def _get_lesson_excerpt(self, course_title: str, lesson_number: int, max_chars: int = 600) -> str:
+        """Sample the opening and a middle chunk of a lesson so the AI can summarize it"""
+        import re
+
+        try:
+            results = self.store.course_content.get(
+                where={"$and": [
+                    {"course_title": course_title},
+                    {"lesson_number": lesson_number}
+                ]}
+            )
+        except Exception:
+            return ""
+
+        chunks = [
+            doc for _, doc in sorted(
+                zip(results.get('metadatas') or [], results.get('documents') or []),
+                key=lambda pair: pair[0].get('chunk_index', 0)
+            )
+        ]
+        if not chunks:
+            return ""
+
+        samples = [chunks[0]]
+        if len(chunks) > 2:
+            samples.append(chunks[len(chunks) // 2])
+
+        # Drop the "Lesson N content:" / "Course <title> Lesson N content:" prefixes added at ingestion
+        samples = [re.sub(r"^(Course .*? )?Lesson \d+ content: ", "", s) for s in samples]
+        return " ... ".join(s[:max_chars].replace("\n", " ") for s in samples)
+
+
 class ToolManager:
     """Manages available tools for the AI"""
     
