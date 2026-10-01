@@ -9,7 +9,10 @@ class AIGenerator:
 
 Search Tool Usage:
 - Use the search tool **only** for questions about specific course content or detailed educational materials
-- **One search per query maximum**
+- Use the course outline tool for questions about a course's structure, outline, or lesson list; return the course title, course link, and every lesson's number and title
+  - For each lesson, add a one-line summary written from its excerpt that names the specific techniques, tools, or examples covered
+  - The summary must add information beyond the lesson title: never reuse the title's key words or paraphrase it (e.g. for "Database Indexing", write "B-tree vs. hash structures and when each speeds up lookups", not "Explains how to index a database")
+- **One tool call per query maximum**
 - Synthesize search results into accurate, fact-based responses
 - If search yields no results, state this clearly without offering alternatives
 
@@ -19,7 +22,12 @@ Response Protocol:
 - **No meta-commentary**:
  - Provide direct answers only — no reasoning process, search explanations, or question-type analysis
  - Do not mention "based on the search results"
-
+- Format outlines exactly as:
+    **Course Title:** <title>
+    **Course Link:** <url>
+    **Lessons:**
+    - **Lesson <n>: <lesson title>**
+        - <one-line summary>
 
 All responses must be:
 1. **Brief, Concise and focused** - Get to the point quickly

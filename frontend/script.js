@@ -130,7 +130,7 @@ function addMessage(content, type, sources = null, isWelcome = false) {
     messageDiv.id = `message-${messageId}`;
     
     // Convert markdown to HTML for assistant messages
-    const displayContent = type === 'assistant' ? marked.parse(content) : escapeHtml(content);
+    const displayContent = type === 'assistant' ? marked.parse(content, { breaks: true }) : escapeHtml(content);
     
     let html = `<div class="message-content">${displayContent}</div>`;
     
