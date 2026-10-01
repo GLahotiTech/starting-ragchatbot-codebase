@@ -125,7 +125,7 @@ function addMessage(content, type, sources = null, isWelcome = false) {
         html += `
             <details class="sources-collapsible">
                 <summary class="sources-header">Sources</summary>
-                <div class="sources-content">${sources.join(', ')}</div>
+                <ol class="sources-content">${sources.map(renderSource).join('')}</ol>
             </details>
         `;
     }
@@ -135,6 +135,14 @@ function addMessage(content, type, sources = null, isWelcome = false) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
     
     return messageId;
+}
+
+function renderSource(source) {
+    const title = escapeHtml(source.title);
+    if (!source.link) {
+        return `<li>${title}</li>`;
+    }
+    return `<li><a href="${escapeHtml(source.link).replace(/"/g, '&quot;')}" target="_blank" rel="noopener noreferrer">${title}</a></li>`;
 }
 
 // Helper function to escape HTML for user messages

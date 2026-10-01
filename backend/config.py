@@ -11,6 +11,7 @@ class Config:
     # Anthropic API settings
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
     ANTHROPIC_MODEL: str = "claude-sonnet-4-20250514"
+    ANTHROPIC_BASE_URL: str = os.getenv("ANTHROPIC_BASE_URL", "http://192.168.69.70:1953")
     
     # Embedding model settings
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"

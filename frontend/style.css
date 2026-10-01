@@ -7,21 +7,21 @@
 
 /* CSS Variables */
 :root {
-    --primary-color: #2563eb;
-    --primary-hover: #1d4ed8;
-    --background: #0f172a;
-    --surface: #1e293b;
-    --surface-hover: #334155;
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --border-color: #334155;
-    --user-message: #2563eb;
-    --assistant-message: #374151;
+    --primary-color: #5fb3a6;
+    --primary-hover: #4a9a8e;
+    --background: #1a1917;
+    --surface: #24221f;
+    --surface-hover: #2f2c28;
+    --text-primary: #ece8e1;
+    --text-secondary: #a39e93;
+    --border-color: #38342f;
+    --user-message: #2f6e66;
+    --assistant-message: #2f2c28;
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     --radius: 12px;
-    --focus-ring: rgba(37, 99, 235, 0.2);
-    --welcome-bg: #1e3a5f;
-    --welcome-border: #2563eb;
+    --focus-ring: rgba(95, 179, 166, 0.25);
+    --welcome-bg: #22302d;
+    --welcome-border: #3f7f76;
 }
 
 /* Base Styles */
@@ -54,7 +54,7 @@ header {
 header h1 {
     font-size: 1.75rem;
     font-weight: 700;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #7cc4b8 0%, #d9a86c 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -241,8 +241,22 @@ header h1 {
 }
 
 .sources-content {
-    padding: 0 0.5rem 0.25rem 1.5rem;
+    margin: 0;
+    padding: 0 0.5rem 0.25rem 2rem;
     color: var(--text-secondary);
+}
+
+.sources-content li {
+    padding: 0.125rem 0;
+}
+
+.sources-content a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.sources-content a:hover {
+    text-decoration: underline;
 }
 
 /* Markdown formatting styles */
@@ -362,7 +376,7 @@ header h1 {
 #sendButton {
     padding: 0.75rem 1.25rem;
     background: var(--primary-color);
-    color: white;
+    color: var(--background);
     border: none;
     border-radius: 24px;
     cursor: pointer;
@@ -381,7 +395,7 @@ header h1 {
 #sendButton:hover:not(:disabled) {
     background: var(--primary-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 4px 12px rgba(95, 179, 166, 0.25);
 }
 
 #sendButton:active:not(:disabled) {
