@@ -9,7 +9,7 @@ from sentence_transformers import SentenceTransformer
 class SearchResults:
     """Container for search results with metadata"""
     documents: List[str]
-    metadata: List[Dict[str, Any]]
+    metadata: List[dict[str, Any]]
     distances: List[float]
     error: Optional[str] = None
     
@@ -213,7 +213,7 @@ class VectorStore:
             print(f"Error getting course count: {e}")
             return 0
     
-    def get_all_courses_metadata(self) -> List[Dict[str, Any]]:
+    def get_all_courses_metadata(self) -> List[dict[str, Any]]:
         """Get metadata for all courses in the vector store"""
         import json
         try:

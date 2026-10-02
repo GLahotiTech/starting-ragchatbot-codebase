@@ -9,7 +9,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Web UI: http://localhost:8000 — API docs: http://localhost:8000/docs
 - Requires `ANTHROPIC_API_KEY` in a root `.env` file (see `.env.example`).
 
-There is no test suite, linter, or formatter configured.
+There is no linter or formatter configured.
+
+### Tests and live checks
+
+- **Automated tests (pytest):** `cd backend && uv run pytest tests`. They are hermetic: a fake Anthropic client and a temp ChromaDB (see `backend/tests/conftest.py`), so they never touch the network or `backend/chroma_db`.
+- **Live smoke checks (NOT pytest):** `cd backend && uv run python live_checks.py [db|search|course|lesson|config|endpoint ...]` (no args runs all). They validate the real setup: the actual DB (on a temp copy, never modified), `ANTHROPIC_API_KEY`, and the configured LLM endpoint (`endpoint` makes one real ~10-token API call). Run this when the app misbehaves, e.g. on "Query failed", or after changing config, ingestion, or the LLM server. Exit code is 1 if any check fails.
 
 The server **must be started from `backend/`**: `app.py` uses relative paths (`../docs`, `../frontend`) and ChromaDB persists to `./chroma_db` (i.e. `backend/chroma_db`).
 
