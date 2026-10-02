@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 import os
 
+import anthropic
+
 from config import config
 from rag_system import RAGSystem
 
@@ -74,6 +76,13 @@ async def query_documents(request: QueryRequest):
             answer=answer,
             sources=sources,
             session_id=session_id
+        )
+    except anthropic.APIConnectionError:
+        # Also covers timeouts (APITimeoutError is a subclass)
+        raise HTTPException(
+            status_code=503,
+            detail="The AI service is unreachable right now. Please check that the "
+                   "LLM server is running and try again.",
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

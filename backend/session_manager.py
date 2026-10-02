@@ -12,7 +12,7 @@ class SessionManager:
     
     def __init__(self, max_history: int = 5):
         self.max_history = max_history
-        self.sessions: Dict[str, List[Message]] = {}
+        self.sessions: dict[str, List[Message]] = {}
         self.session_counter = 0
     
     def create_session(self) -> str:

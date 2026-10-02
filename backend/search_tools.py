@@ -1,20 +1,19 @@
-from typing import Dict, Any, Optional, Protocol
 from abc import ABC, abstractmethod
-from vector_store import VectorStore, SearchResults
+from typing import Any, Optional
+
+from vector_store import SearchResults, VectorStore
 
 
 class Tool(ABC):
     """Abstract base class for all tools"""
     
     @abstractmethod
-    def get_tool_definition(self) -> Dict[str, Any]:
+    def get_tool_definition(self) -> dict[str, Any]:
         """Return Anthropic tool definition for this tool"""
-        pass
     
     @abstractmethod
     def execute(self, **kwargs) -> str:
         """Execute the tool with given parameters"""
-        pass
 
 
 class CourseSearchTool(Tool):
@@ -24,7 +23,7 @@ class CourseSearchTool(Tool):
         self.store = vector_store
         self.last_sources = []  # Track sources from last search
     
-    def get_tool_definition(self) -> Dict[str, Any]:
+    def get_tool_definition(self) -> dict[str, Any]:
         """Return Anthropic tool definition for this tool"""
         return {
             "name": "search_course_content",
@@ -49,7 +48,7 @@ class CourseSearchTool(Tool):
             }
         }
     
-    def execute(self, query: str, course_name: Optional[str] = None, lesson_number: Optional[int] = None) -> str:
+    def execute(self, query: str, course_name: str | None = None, lesson_number: int | None = None) -> str:
         """
         Execute the search tool with given parameters.
         
@@ -78,7 +77,7 @@ class CourseSearchTool(Tool):
             filter_info = ""
             if course_name:
                 filter_info += f" in course '{course_name}'"
-            if lesson_number:
+            if lesson_number is not None:
                 filter_info += f" in lesson {lesson_number}"
             return f"No relevant content found{filter_info}."
         
@@ -129,7 +128,7 @@ class CourseOutlineTool(Tool):
         self.store = vector_store
         self.last_sources = []  # Track sources from last outline lookup
 
-    def get_tool_definition(self) -> Dict[str, Any]:
+    def get_tool_definition(self) -> dict[str, Any]:
         """Return Anthropic tool definition for this tool"""
         return {
             "name": "get_course_outline",

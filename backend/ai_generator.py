@@ -1,4 +1,5 @@
 import anthropic
+import httpx
 from typing import List, Optional, Dict, Any
 
 class AIGenerator:
@@ -38,7 +39,12 @@ Provide only the direct answer to what was asked.
 """
     
     def __init__(self, api_key: str, model: str, base_url: Optional[str] = None):
-        self.client = anthropic.Anthropic(api_key=api_key, base_url=base_url)
+        # Short connect timeout so an unreachable server fails fast instead of hanging
+        self.client = anthropic.Anthropic(
+            api_key=api_key,
+            base_url=base_url,
+            timeout=httpx.Timeout(60.0, connect=5.0),
+        )
         self.model = model
         
         # Pre-build base API parameters
@@ -65,6 +71,10 @@ Provide only the direct answer to what was asked.
             Generated response as string
         """
         
+        # Tools without a manager could never be executed - caller error
+        if tools and tool_manager is None:
+            raise ValueError("tool_manager is required when tools are provided")
+
         # Build system content efficiently - avoid string ops when possible
         system_content = (
             f"{self.SYSTEM_PROMPT}\n\nPrevious conversation:\n{conversation_history}"
@@ -94,7 +104,7 @@ Provide only the direct answer to what was asked.
         # Return direct response
         return response.content[0].text
     
-    def _handle_tool_execution(self, initial_response, base_params: Dict[str, Any], tool_manager):
+    def _handle_tool_execution(self, initial_response, base_params: dict[str, Any], tool_manager):
         """
         Handle execution of tool calls and get follow-up response.
         
@@ -116,16 +126,21 @@ Provide only the direct answer to what was asked.
         tool_results = []
         for content_block in initial_response.content:
             if content_block.type == "tool_use":
-                tool_result = tool_manager.execute_tool(
-                    content_block.name, 
-                    **content_block.input
-                )
-                
-                tool_results.append({
+                result_block = {
                     "type": "tool_result",
                     "tool_use_id": content_block.id,
-                    "content": tool_result
-                })
+                }
+                try:
+                    result_block["content"] = tool_manager.execute_tool(
+                        content_block.name,
+                        **content_block.input
+                    )
+                except Exception as e:
+                    # Report the failure to Claude instead of failing the whole request
+                    result_block["content"] = f"Error executing tool '{content_block.name}': {e}"
+                    result_block["is_error"] = True
+
+                tool_results.append(result_block)
         
         # Add tool results as single message
         if tool_results:

@@ -77,7 +77,15 @@ async function sendMessage() {
             })
         });
 
-        if (!response.ok) throw new Error('Query failed');
+        if (!response.ok) {
+            // Surface the server's explanation (FastAPI puts it in `detail`)
+            let detail = 'Query failed';
+            try {
+                const body = await response.json();
+                if (body.detail) detail = body.detail;
+            } catch (_) { /* non-JSON error body */ }
+            throw new Error(detail);
+        }
 
         const data = await response.json();
 
