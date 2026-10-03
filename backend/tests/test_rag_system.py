@@ -81,6 +81,22 @@ class TestContentQuery:
         assert "Lesson 1: Building" in tool_result
         assert sources[0]["title"] == "Intro to Widgets"
 
+    def test_outline_then_search_chains_two_rounds_against_real_store(self, rag, mock_anthropic):
+        """Claude reads the outline, then searches using what it learned; both real tool results
+        reach the final request and the answer comes back."""
+        mock_anthropic.messages.create.side_effect = [
+            tool_use_response(name="get_course_outline", tool_input={"course_title": "Widgets"}, tool_id="t1"),
+            tool_use_response(tool_input={"query": "attach the gizmo", "lesson_number": 1}, tool_id="t2"),
+            text_response("Lesson 1 is about building."),
+        ]
+        answer, _ = rag.query("What is lesson 1 of the widgets course about?")
+        assert answer == "Lesson 1 is about building."
+        calls = mock_anthropic.messages.create.call_args_list
+        assert len(calls) == 3
+        final = calls[2].kwargs["messages"]
+        assert "Lesson 1: Building" in final[2]["content"][0]["content"]
+        assert "gizmo" in final[4]["content"][0]["content"]
+
     def test_search_tool_failure_is_surfaced_to_model_not_raised(self, rag, mock_anthropic):
         """A broken vector store should yield a tool-result string, so the model can answer."""
         rag.vector_store.course_content = MagicMock()
