@@ -1,4 +1,5 @@
 """ToolManager (registry/dispatch) and CourseOutlineTool (course structure lookup)."""
+
 from unittest.mock import MagicMock
 
 import pytest
@@ -46,7 +47,9 @@ class TestToolManager:
     def test_get_last_sources_then_reset(self):
         """Sources come from whichever tool has some; reset clears every tool."""
         tm = ToolManager()
-        empty, filled = self.fake_tool("a"), self.fake_tool("b", sources=[{"title": "T", "link": None}])
+        empty, filled = self.fake_tool("a"), self.fake_tool(
+            "b", sources=[{"title": "T", "link": None}]
+        )
         tm.register_tool(empty)
         tm.register_tool(filled)
         assert tm.get_last_sources() == [{"title": "T", "link": None}]
@@ -79,21 +82,37 @@ class TestCourseOutlineTool:
 
     def test_excerpt_samples_first_and_middle_chunk_of_long_lessons(self, tmp_path):
         store = VectorStore(str(tmp_path / "chroma"), Config.EMBEDDING_MODEL, 5)
-        course = Course(title="Long", course_link="http://l", instructor="X",
-                        lessons=[Lesson(lesson_number=0, title="Only", lesson_link=None)])
+        course = Course(
+            title="Long",
+            course_link="http://l",
+            instructor="X",
+            lessons=[Lesson(lesson_number=0, title="Only", lesson_link=None)],
+        )
         store.add_course_metadata(course)
-        store.add_course_content([
-            CourseChunk(content=("Lesson 0 content: " if i == 0 else "") + f"chunk{i}",
-                        course_title="Long", lesson_number=0, chunk_index=i)
-            for i in range(5)])
+        store.add_course_content(
+            [
+                CourseChunk(
+                    content=("Lesson 0 content: " if i == 0 else "") + f"chunk{i}",
+                    course_title="Long",
+                    lesson_number=0,
+                    chunk_index=i,
+                )
+                for i in range(5)
+            ]
+        )
         out = CourseOutlineTool(store).execute("Long")
         assert "  Excerpt: chunk0 ... chunk2" in out  # first, then index len//2 == 2
 
     def test_sets_last_sources_to_the_course(self, real_store):
         tool = CourseOutlineTool(real_store)
         tool.execute("Intro to Widgets")
-        assert tool.last_sources == [{"title": "Intro to Widgets", "link": "https://example.com/widgets"}]
+        assert tool.last_sources == [
+            {"title": "Intro to Widgets", "link": "https://example.com/widgets"}
+        ]
 
     def test_no_courses_in_catalog_gives_not_found_message(self, tmp_path):
         empty = VectorStore(str(tmp_path / "empty"), Config.EMBEDDING_MODEL, 5)
-        assert CourseOutlineTool(empty).execute("anything") == "No course found matching 'anything'"
+        assert (
+            CourseOutlineTool(empty).execute("anything")
+            == "No course found matching 'anything'"
+        )

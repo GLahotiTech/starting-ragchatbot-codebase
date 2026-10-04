@@ -4,6 +4,7 @@
 fixture patches RAGSystem before importing app fresh, and runs from backend/.
 TestClient is used WITHOUT a `with` block so the startup (doc ingestion) hook never runs.
 """
+
 import sys
 from unittest.mock import MagicMock
 
@@ -25,6 +26,7 @@ def api(monkeypatch):
     monkeypatch.chdir(BACKEND_DIR)
     sys.modules.pop("app", None)
     import app
+
     yield TestClient(app.app), fake_rag
     sys.modules.pop("app", None)
 
@@ -36,8 +38,11 @@ class TestQueryEndpoint:
         rag.query.return_value = ("ans", [{"title": "T", "link": None}])
         r = client.post("/api/query", json={"query": "hi"})
         assert r.status_code == 200
-        assert r.json() == {"answer": "ans", "sources": [{"title": "T", "link": None}],
-                            "session_id": "session_1"}
+        assert r.json() == {
+            "answer": "ans",
+            "sources": [{"title": "T", "link": None}],
+            "session_id": "session_1",
+        }
         rag.query.assert_called_once_with("hi", "session_1")
 
     def test_existing_session_is_reused(self, api):
@@ -47,10 +52,13 @@ class TestQueryEndpoint:
         assert r.json()["session_id"] == "s9"
         rag.session_manager.create_session.assert_not_called()
 
-    @pytest.mark.parametrize("error", [
-        anthropic.APIConnectionError(request=REQ),
-        anthropic.APITimeoutError(request=REQ),
-    ])
+    @pytest.mark.parametrize(
+        "error",
+        [
+            anthropic.APIConnectionError(request=REQ),
+            anthropic.APITimeoutError(request=REQ),
+        ],
+    )
     def test_unreachable_llm_gives_503_with_friendly_message(self, api, error):
         client, rag = api
         rag.query.side_effect = error
@@ -68,7 +76,10 @@ class TestQueryEndpoint:
 class TestCoursesEndpoint:
     def test_returns_course_stats(self, api):
         client, rag = api
-        rag.get_course_analytics.return_value = {"total_courses": 2, "course_titles": ["A", "B"]}
+        rag.get_course_analytics.return_value = {
+            "total_courses": 2,
+            "course_titles": ["A", "B"],
+        }
         r = client.get("/api/courses")
         assert r.status_code == 200
         assert r.json() == {"total_courses": 2, "course_titles": ["A", "B"]}

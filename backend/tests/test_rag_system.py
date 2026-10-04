@@ -3,6 +3,7 @@
 Uses a real vector store (temp dir) and a FAKE Anthropic client; nothing here
 touches the network or your real database.
 """
+
 from unittest.mock import MagicMock
 
 import pytest
@@ -34,21 +35,32 @@ class TestContentQuery:
     def test_content_query_returns_answer_and_sources(self, rag, mock_anthropic):
         """Full flow: Claude calls search -> real DB lookup -> final answer + sources with links."""
         mock_anthropic.messages.create.side_effect = [
-            tool_use_response(tool_input={"query": "build a widget", "lesson_number": 1}),
+            tool_use_response(
+                tool_input={"query": "build a widget", "lesson_number": 1}
+            ),
             text_response("Attach the gizmo."),
         ]
         answer, sources = rag.query("How do I build a widget?")
         assert answer == "Attach the gizmo."
-        assert sources == [{"title": "Intro to Widgets - Lesson 1",
-                            "link": "https://example.com/widgets/1"}]
+        assert sources == [
+            {
+                "title": "Intro to Widgets - Lesson 1",
+                "link": "https://example.com/widgets/1",
+            }
+        ]
         # The real search result (not just the final answer) reached the follow-up call
-        tool_result = mock_anthropic.messages.create.call_args_list[1].kwargs["messages"][2]["content"][0]["content"]
+        tool_result = mock_anthropic.messages.create.call_args_list[1].kwargs[
+            "messages"
+        ][2]["content"][0]["content"]
         assert "gizmo" in tool_result
 
     def test_sources_reset_after_query(self, rag, mock_anthropic):
         """Sources from query 1 must not leak into query 2 (which does no search)."""
         mock_anthropic.messages.create.side_effect = [
-            tool_use_response(), text_response("a"), text_response("general answer")]
+            tool_use_response(),
+            text_response("a"),
+            text_response("general answer"),
+        ]
         rag.query("content q")
         _, sources = rag.query("general q")
         assert sources == []
@@ -59,7 +71,10 @@ class TestContentQuery:
         rag.query("What is a widget?")
         kw = mock_anthropic.messages.create.call_args.kwargs
         assert "What is a widget?" in kw["messages"][0]["content"]
-        assert [t["name"] for t in kw["tools"]] == ["search_course_content", "get_course_outline"]
+        assert [t["name"] for t in kw["tools"]] == [
+            "search_course_content",
+            "get_course_outline",
+        ]
 
     def test_session_history_is_recorded_and_reused(self, rag, mock_anthropic):
         """The 2nd query in a session sees the 1st question and answer in its system prompt."""
@@ -73,20 +88,33 @@ class TestContentQuery:
     def test_outline_query_uses_outline_tool(self, rag, mock_anthropic):
         """When Claude picks get_course_outline, the lesson list is returned and a source recorded."""
         mock_anthropic.messages.create.side_effect = [
-            tool_use_response(name="get_course_outline", tool_input={"course_title": "Widgets"}),
+            tool_use_response(
+                name="get_course_outline", tool_input={"course_title": "Widgets"}
+            ),
             text_response("outline"),
         ]
         answer, sources = rag.query("Outline of the widgets course")
-        tool_result = mock_anthropic.messages.create.call_args_list[1].kwargs["messages"][2]["content"][0]["content"]
+        tool_result = mock_anthropic.messages.create.call_args_list[1].kwargs[
+            "messages"
+        ][2]["content"][0]["content"]
         assert "Lesson 1: Building" in tool_result
         assert sources[0]["title"] == "Intro to Widgets"
 
-    def test_outline_then_search_chains_two_rounds_against_real_store(self, rag, mock_anthropic):
+    def test_outline_then_search_chains_two_rounds_against_real_store(
+        self, rag, mock_anthropic
+    ):
         """Claude reads the outline, then searches using what it learned; both real tool results
         reach the final request and the answer comes back."""
         mock_anthropic.messages.create.side_effect = [
-            tool_use_response(name="get_course_outline", tool_input={"course_title": "Widgets"}, tool_id="t1"),
-            tool_use_response(tool_input={"query": "attach the gizmo", "lesson_number": 1}, tool_id="t2"),
+            tool_use_response(
+                name="get_course_outline",
+                tool_input={"course_title": "Widgets"},
+                tool_id="t1",
+            ),
+            tool_use_response(
+                tool_input={"query": "attach the gizmo", "lesson_number": 1},
+                tool_id="t2",
+            ),
             text_response("Lesson 1 is about building."),
         ]
         answer, _ = rag.query("What is lesson 1 of the widgets course about?")
@@ -97,22 +125,31 @@ class TestContentQuery:
         assert "Lesson 1: Building" in final[2]["content"][0]["content"]
         assert "gizmo" in final[4]["content"][0]["content"]
 
-    def test_search_tool_failure_is_surfaced_to_model_not_raised(self, rag, mock_anthropic):
+    def test_search_tool_failure_is_surfaced_to_model_not_raised(
+        self, rag, mock_anthropic
+    ):
         """A broken vector store should yield a tool-result string, so the model can answer."""
         rag.vector_store.course_content = MagicMock()
         rag.vector_store.course_content.query.side_effect = RuntimeError("chroma down")
-        mock_anthropic.messages.create.side_effect = [tool_use_response(), text_response("sorry")]
+        mock_anthropic.messages.create.side_effect = [
+            tool_use_response(),
+            text_response("sorry"),
+        ]
         answer, _ = rag.query("content q")
         assert answer == "sorry"
-        result = mock_anthropic.messages.create.call_args_list[1].kwargs["messages"][2]["content"][0]["content"]
+        result = mock_anthropic.messages.create.call_args_list[1].kwargs["messages"][2][
+            "content"
+        ][0]["content"]
         assert "chroma down" in result
 
 
 class TestIngestion:
     """Loading documents from a folder."""
 
-    GADGET_DOC = ("Course Title: Gadget Basics\nCourse Link: http://g\nCourse Instructor: Bo\n\n"
-                  "Lesson 0: Intro\nLesson Link: http://g/0\nGadgets whir and click when powered.\n")
+    GADGET_DOC = (
+        "Course Title: Gadget Basics\nCourse Link: http://g\nCourse Instructor: Bo\n\n"
+        "Lesson 0: Intro\nLesson Link: http://g/0\nGadgets whir and click when powered.\n"
+    )
 
     def test_add_course_folder_then_search(self, rag, tmp_path):
         """Write a .txt course in the expected format, ingest it, and find its content via search."""

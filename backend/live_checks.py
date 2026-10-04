@@ -10,6 +10,7 @@ Checks never modify your data: the DB checks operate on a temporary COPY of
 backend/chroma_db. The `endpoint` check makes one real 10-token API request.
 Exit code is 0 if all selected checks pass, 1 otherwise.
 """
+
 import json
 import os
 import shutil
@@ -28,7 +29,9 @@ def _open_db_copy(tmp_dir):
     """Open a VectorStore over a copy of backend/chroma_db (never touches the original)."""
     src = os.path.join(BACKEND_DIR, "chroma_db")
     if not os.path.isdir(src):
-        raise AssertionError("backend/chroma_db does not exist (start the server once to ingest docs)")
+        raise AssertionError(
+            "backend/chroma_db does not exist (start the server once to ingest docs)"
+        )
     dst = os.path.join(tmp_dir, "chroma_copy")
     shutil.copytree(src, dst)
     return VectorStore(dst, config.EMBEDDING_MODEL, config.MAX_RESULTS)
@@ -55,7 +58,9 @@ def check_course_filtered_search(store):
     """Filtering by a real course title works."""
     title = store.get_existing_course_titles()[0]
     out = CourseSearchTool(store).execute("introduction", course_name=title)
-    assert not out.startswith(("Search error", "No course found", "No relevant content")), out
+    assert not out.startswith(
+        ("Search error", "No course found", "No relevant content")
+    ), out
     return title
 
 
@@ -63,8 +68,12 @@ def check_course_and_lesson_filtered_search(store):
     """Filtering by a real course title AND a lesson that exists in it works."""
     meta = store.get_all_courses_metadata()[0]
     title, lesson = meta["title"], meta["lessons"][0]["lesson_number"]
-    out = CourseSearchTool(store).execute("introduction", course_name=title, lesson_number=lesson)
-    assert not out.startswith(("Search error", "No course found", "No relevant content")), out
+    out = CourseSearchTool(store).execute(
+        "introduction", course_name=title, lesson_number=lesson
+    )
+    assert not out.startswith(
+        ("Search error", "No course found", "No relevant content")
+    ), out
     return f"{title} / lesson {lesson}"
 
 
@@ -77,11 +86,19 @@ def check_config():
 def check_endpoint():
     """Send one real 10-token request to the configured endpoint and model (costs a few tokens)."""
     import anthropic
+
     assert config.ANTHROPIC_API_KEY, "no API key, cannot call the endpoint"
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY,
-                                 base_url=config.ANTHROPIC_BASE_URL, timeout=20, max_retries=0)
-    resp = client.messages.create(model=config.ANTHROPIC_MODEL, max_tokens=10,
-                                  messages=[{"role": "user", "content": "hi"}])
+    client = anthropic.Anthropic(
+        api_key=config.ANTHROPIC_API_KEY,
+        base_url=config.ANTHROPIC_BASE_URL,
+        timeout=20,
+        max_retries=0,
+    )
+    resp = client.messages.create(
+        model=config.ANTHROPIC_MODEL,
+        max_tokens=10,
+        messages=[{"role": "user", "content": "hi"}],
+    )
     assert resp.content, "endpoint answered but returned empty content"
     return "reachable, model accepted"
 
