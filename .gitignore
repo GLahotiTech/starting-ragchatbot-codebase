@@ -32,3 +32,5 @@ Thumbs.db
 
 .codegraph/
 .playwright-mcp/
+
+.trees
