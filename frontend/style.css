@@ -22,7 +22,107 @@
     --focus-ring: rgba(95, 179, 166, 0.25);
     --welcome-bg: #22302d;
     --welcome-border: #3f7f76;
+    --on-primary: #1a1917;
+    --on-user-message: #ffffff;
+    --link-hover: #7fcbbf;
+    --link-underline: rgba(95, 179, 166, 0.4);
+    --user-link-underline: rgba(236, 232, 225, 0.5);
+    --code-bg: rgba(0, 0, 0, 0.2);
+    --welcome-shadow: rgba(0, 0, 0, 0.2);
+    --error-bg: rgba(239, 68, 68, 0.1);
+    --error-text: #f87171;
+    --error-border: rgba(239, 68, 68, 0.2);
+    --success-bg: rgba(34, 197, 94, 0.1);
+    --success-text: #4ade80;
+    --success-border: rgba(34, 197, 94, 0.2);
+    --button-glow: rgba(95, 179, 166, 0.25);
 }
+
+/* Light theme */
+:root[data-theme="light"] {
+    --primary-color: #2b7a6e;
+    --primary-hover: #1f6359;
+    --background: #f7f4ee;
+    --surface: #ffffff;
+    --surface-hover: #ece7dd;
+    --text-primary: #211f1b;
+    --text-secondary: #5a554b;
+    --border-color: #d8d1c3;
+    --user-message: #2b7a6e;
+    --assistant-message: #ece7dd;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --focus-ring: rgba(43, 122, 110, 0.3);
+    --welcome-bg: #e4f0ed;
+    --welcome-border: #7fb5ac;
+    --on-primary: #ffffff;
+    --link-hover: #1d5a50;
+    --link-underline: rgba(43, 122, 110, 0.45);
+    --user-link-underline: rgba(255, 255, 255, 0.6);
+    --code-bg: rgba(0, 0, 0, 0.06);
+    --welcome-shadow: rgba(0, 0, 0, 0.08);
+    --error-bg: rgba(220, 38, 38, 0.08);
+    --error-text: #b91c1c;
+    --error-border: rgba(220, 38, 38, 0.3);
+    --success-bg: rgba(22, 163, 74, 0.08);
+    --success-text: #166534;
+    --success-border: rgba(22, 163, 74, 0.3);
+    --button-glow: rgba(43, 122, 110, 0.3);
+}
+
+/* Smooth theme transition (class is applied briefly by JS while toggling) */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+    transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease,
+                box-shadow 0.35s ease, fill 0.35s ease, stroke 0.35s ease !important;
+}
+
+/* Theme toggle button (fixed, top-right) */
+.theme-toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 100;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.theme-toggle:hover {
+    background: var(--surface-hover);
+    border-color: var(--primary-color);
+}
+
+.theme-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--focus-ring);
+    border-color: var(--primary-color);
+}
+
+.theme-toggle svg {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    transition: transform 0.4s ease, opacity 0.3s ease;
+}
+
+/* Dark theme shows the sun (click to go light); light theme shows the moon */
+.theme-toggle .icon-sun { opacity: 1; transform: rotate(0) scale(1); }
+.theme-toggle .icon-moon { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+
+:root[data-theme="light"] .theme-toggle .icon-sun { opacity: 0; transform: rotate(90deg) scale(0.5); }
+:root[data-theme="light"] .theme-toggle .icon-moon { opacity: 1; transform: rotate(0) scale(1); }
 
 /* Base Styles */
 body {
@@ -196,7 +296,7 @@ header h1 {
 
 .message.user .message-content {
     background: var(--user-message);
-    color: white;
+    color: var(--on-user-message);
     border-bottom-right-radius: 4px;
 }
 
@@ -293,14 +393,14 @@ header h1 {
 .message-content a {
     color: var(--primary-color);
     text-decoration: underline;
-    text-decoration-color: rgba(95, 179, 166, 0.4);
+    text-decoration-color: var(--link-underline);
     text-underline-offset: 3px;
     overflow-wrap: anywhere;
     transition: color 0.2s ease, text-decoration-color 0.2s ease;
 }
 
 .message-content a:hover {
-    color: #7fcbbf;
+    color: var(--link-hover);
     text-decoration-color: currentColor;
 }
 
@@ -311,12 +411,12 @@ header h1 {
 }
 
 .message.user .message-content a {
-    color: var(--text-primary);
-    text-decoration-color: rgba(236, 232, 225, 0.5);
+    color: var(--on-user-message);
+    text-decoration-color: var(--user-link-underline);
 }
 
 .message-content code {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: var(--code-bg);
     padding: 0.125rem 0.25rem;
     border-radius: 3px;
     font-family: 'Fira Code', 'Consolas', monospace;
@@ -324,7 +424,7 @@ header h1 {
 }
 
 .message-content pre {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: var(--code-bg);
     padding: 0.75rem;
     border-radius: 4px;
     overflow-x: auto;
@@ -337,7 +437,7 @@ header h1 {
 }
 
 .message-content blockquote {
-    border-left: 3px solid var(--primary);
+    border-left: 3px solid var(--primary-color);
     padding-left: 1rem;
     margin: 0.5rem 0;
     color: var(--text-secondary);
@@ -347,7 +447,7 @@ header h1 {
 .message.welcome-message .message-content {
     background: var(--surface);
     border: 2px solid var(--border-color);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 16px var(--welcome-shadow);
     position: relative;
 }
 
@@ -401,7 +501,7 @@ header h1 {
 #sendButton {
     padding: 0.75rem 1.25rem;
     background: var(--primary-color);
-    color: var(--background);
+    color: var(--on-primary);
     border: none;
     border-radius: 24px;
     cursor: pointer;
@@ -420,7 +520,7 @@ header h1 {
 #sendButton:hover:not(:disabled) {
     background: var(--primary-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(95, 179, 166, 0.25);
+    box-shadow: 0 4px 12px var(--button-glow);
 }
 
 #sendButton:active:not(:disabled) {
@@ -466,21 +566,21 @@ header h1 {
 
 /* Error Message */
 .error-message {
-    background: rgba(239, 68, 68, 0.1);
-    color: #f87171;
+    background: var(--error-bg);
+    color: var(--error-text);
     padding: 0.75rem 1.25rem;
     border-radius: 8px;
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    border: 1px solid var(--error-border);
     margin: 0.5rem 0;
 }
 
 /* Success Message */
 .success-message {
-    background: rgba(34, 197, 94, 0.1);
-    color: #4ade80;
+    background: var(--success-bg);
+    color: var(--success-text);
     padding: 0.75rem 1.25rem;
     border-radius: 8px;
-    border: 1px solid rgba(34, 197, 94, 0.2);
+    border: 1px solid var(--success-border);
     margin: 0.5rem 0;
 }
 
@@ -671,7 +771,7 @@ details[open] .suggested-header::before {
     background: var(--primary-color);
     border: none;
     border-radius: 8px;
-    color: var(--background);
+    color: var(--on-primary);
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
