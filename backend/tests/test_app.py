@@ -1,32 +1,12 @@
 """HTTP layer (app.py): status codes and error mapping, with RAGSystem faked.
 
-`app.py` builds a RAGSystem at import time and mounts ../frontend, so the `api`
-fixture patches RAGSystem before importing app fresh, and runs from backend/.
-TestClient is used WITHOUT a `with` block so the startup (doc ingestion) hook never runs.
+The `api` fixture (conftest.py) imports app.py with RAGSystem faked and returns a TestClient.
 """
-import sys
-from unittest.mock import MagicMock
-
 import anthropic
 import httpx
 import pytest
-from fastapi.testclient import TestClient
-
-from tests.conftest import BACKEND_DIR
 
 REQ = httpx.Request("POST", "http://llm.invalid")
-
-
-@pytest.fixture
-def api(monkeypatch):
-    """Yields (TestClient, fake_rag) with a freshly imported app wired to the fake RAGSystem."""
-    fake_rag = MagicMock()
-    monkeypatch.setattr("rag_system.RAGSystem", lambda cfg: fake_rag)
-    monkeypatch.chdir(BACKEND_DIR)
-    sys.modules.pop("app", None)
-    import app
-    yield TestClient(app.app), fake_rag
-    sys.modules.pop("app", None)
 
 
 class TestQueryEndpoint:
@@ -72,3 +52,54 @@ class TestCoursesEndpoint:
         r = client.get("/api/courses")
         assert r.status_code == 200
         assert r.json() == {"total_courses": 2, "course_titles": ["A", "B"]}
+
+    def test_empty_analytics(self, api):
+        client, rag = api
+        rag.get_course_analytics.return_value = {"total_courses": 0, "course_titles": []}
+        assert client.get("/api/courses").json() == {"total_courses": 0, "course_titles": []}
+
+    def test_failure_gives_500(self, api):
+        client, rag = api
+        rag.get_course_analytics.side_effect = RuntimeError("db down")
+        r = client.get("/api/courses")
+        assert r.status_code == 500 and r.json()["detail"] == "db down"
+
+
+class TestRequestValidation:
+    @pytest.mark.parametrize("body", [{}, {"session_id": "s"}, {"query": 123}, {"query": None}])
+    def test_bad_query_body_gives_422(self, api, body):
+        client, rag = api
+        assert client.post("/api/query", json=body).status_code == 422
+        rag.query.assert_not_called()
+
+    def test_query_rejects_get(self, api):
+        client, _ = api
+        # The "/" static mount catches the unmatched GET, so it is a 404 rather than 405.
+        assert client.get("/api/query").status_code in (404, 405)
+
+    def test_courses_rejects_post(self, api):
+        client, _ = api
+        assert client.post("/api/courses").status_code == 405
+
+    def test_sources_with_link_round_trip(self, api):
+        client, rag = api
+        rag.query.return_value = ("a", [{"title": "T", "link": "https://x.test"}])
+        r = client.post("/api/query", json={"query": "q", "session_id": "s"})
+        assert r.json()["sources"] == [{"title": "T", "link": "https://x.test"}]
+
+
+class TestRootAndStatic:
+    def test_root_serves_frontend_html(self, api):
+        client, _ = api
+        r = client.get("/")
+        assert r.status_code == 200
+        assert "text/html" in r.headers["content-type"]
+
+    def test_unknown_path_is_404(self, api):
+        client, _ = api
+        assert client.get("/nope.xyz").status_code == 404
+
+    def test_cors_headers_present(self, api):
+        client, _ = api
+        r = client.get("/api/courses", headers={"Origin": "http://example.com"})
+        assert r.headers.get("access-control-allow-origin") in ("*", "http://example.com")
