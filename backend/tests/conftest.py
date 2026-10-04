@@ -5,6 +5,7 @@ here can be used in ANY test file in this folder: just add a parameter with the
 same name as the fixture to the test function and pytest passes in its return value.
 No import is needed (plain helper functions, like text_response, do need importing).
 """
+
 import os
 import sys
 from types import SimpleNamespace
@@ -32,15 +33,31 @@ def sample_course():
         course_link="https://example.com/widgets",
         instructor="Ada",
         lessons=[
-            Lesson(lesson_number=0, title="Overview", lesson_link="https://example.com/widgets/0"),
-            Lesson(lesson_number=1, title="Building", lesson_link="https://example.com/widgets/1"),
+            Lesson(
+                lesson_number=0,
+                title="Overview",
+                lesson_link="https://example.com/widgets/0",
+            ),
+            Lesson(
+                lesson_number=1,
+                title="Building",
+                lesson_link="https://example.com/widgets/1",
+            ),
         ],
     )
     chunks = [
-        CourseChunk(content="Lesson 0 content: Widgets are small reusable components.",
-                    course_title=course.title, lesson_number=0, chunk_index=0),
-        CourseChunk(content="Lesson 1 content: To build a widget, attach the gizmo to the sprocket.",
-                    course_title=course.title, lesson_number=1, chunk_index=1),
+        CourseChunk(
+            content="Lesson 0 content: Widgets are small reusable components.",
+            course_title=course.title,
+            lesson_number=0,
+            chunk_index=0,
+        ),
+        CourseChunk(
+            content="Lesson 1 content: To build a widget, attach the gizmo to the sprocket.",
+            course_title=course.title,
+            lesson_number=1,
+            chunk_index=1,
+        ),
     ]
     return course, chunks
 
@@ -57,15 +74,31 @@ def second_course():
         course_link="https://example.com/gadgets",
         instructor="Bo",
         lessons=[
-            Lesson(lesson_number=0, title="Power", lesson_link="https://example.com/gadgets/0"),
-            Lesson(lesson_number=1, title="Repair", lesson_link="https://example.com/gadgets/1"),
+            Lesson(
+                lesson_number=0,
+                title="Power",
+                lesson_link="https://example.com/gadgets/0",
+            ),
+            Lesson(
+                lesson_number=1,
+                title="Repair",
+                lesson_link="https://example.com/gadgets/1",
+            ),
         ],
     )
     chunks = [
-        CourseChunk(content="Lesson 0 content: Gadgets whir and click when powered by a battery.",
-                    course_title=course.title, lesson_number=0, chunk_index=0),
-        CourseChunk(content="Lesson 1 content: To repair a gadget, replace the flux capacitor.",
-                    course_title=course.title, lesson_number=1, chunk_index=1),
+        CourseChunk(
+            content="Lesson 0 content: Gadgets whir and click when powered by a battery.",
+            course_title=course.title,
+            lesson_number=0,
+            chunk_index=0,
+        ),
+        CourseChunk(
+            content="Lesson 1 content: To repair a gadget, replace the flux capacitor.",
+            course_title=course.title,
+            lesson_number=1,
+            chunk_index=1,
+        ),
     ]
     return course, chunks
 
@@ -88,14 +121,16 @@ def real_store(tmp_path, sample_course, second_course):
 # These mimic the shape of anthropic SDK responses (only the attributes the code reads).
 def text_response(text="final answer"):
     """Fake Claude reply that is finished and contains one text block."""
-    return SimpleNamespace(stop_reason="end_turn",
-                           content=[SimpleNamespace(type="text", text=text)])
+    return SimpleNamespace(
+        stop_reason="end_turn", content=[SimpleNamespace(type="text", text=text)]
+    )
 
 
 def tool_use_response(name="search_course_content", tool_input=None, tool_id="toolu_1"):
     """Fake Claude reply that asks us to run a tool (stop_reason == "tool_use")."""
-    block = SimpleNamespace(type="tool_use", name=name, id=tool_id,
-                            input=tool_input or {"query": "widgets"})
+    block = SimpleNamespace(
+        type="tool_use", name=name, id=tool_id, input=tool_input or {"query": "widgets"}
+    )
     return SimpleNamespace(stop_reason="tool_use", content=[block])
 
 
@@ -112,4 +147,3 @@ def mock_anthropic(monkeypatch):
     client = MagicMock()
     monkeypatch.setattr("ai_generator.anthropic.Anthropic", lambda **kw: client)
     return client
- 

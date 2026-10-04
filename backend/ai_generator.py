@@ -2,12 +2,13 @@ import anthropic
 import httpx
 from typing import List, Optional, Dict, Any
 
+
 class AIGenerator:
     """Handles interactions with Anthropic's Claude API for generating responses"""
 
     # Max sequential rounds in which Claude may call tools for one user query
     MAX_TOOL_ROUNDS = 2
-    
+
     # Static system prompt to avoid rebuilding on each call
     SYSTEM_PROMPT = """ You are an AI assistant specialized in course materials and educational content with access to a comprehensive search tool for course information.
 
@@ -42,7 +43,7 @@ All responses must be:
 4. **Example-supported** - Include relevant examples when they aid understanding
 Provide only the direct answer to what was asked.
 """
-    
+
     def __init__(self, api_key: str, model: str, base_url: Optional[str] = None):
         # Short connect timeout so an unreachable server fails fast instead of hanging
         self.client = anthropic.Anthropic(
@@ -51,31 +52,30 @@ Provide only the direct answer to what was asked.
             timeout=httpx.Timeout(60.0, connect=5.0),
         )
         self.model = model
-        
+
         # Pre-build base API parameters
-        self.base_params = {
-            "model": self.model,
-            "temperature": 0,
-            "max_tokens": 800
-        }
-    
-    def generate_response(self, query: str,
-                         conversation_history: Optional[str] = None,
-                         tools: Optional[List] = None,
-                         tool_manager=None) -> str:
+        self.base_params = {"model": self.model, "temperature": 0, "max_tokens": 800}
+
+    def generate_response(
+        self,
+        query: str,
+        conversation_history: Optional[str] = None,
+        tools: Optional[List] = None,
+        tool_manager=None,
+    ) -> str:
         """
         Generate AI response with optional tool usage and conversation context.
-        
+
         Args:
             query: The user's question or request
             conversation_history: Previous messages for context
             tools: Available tools the AI can use
             tool_manager: Manager to execute tools
-            
+
         Returns:
             Generated response as string
         """
-        
+
         # Tools without a manager could never be executed - caller error
         if tools and tool_manager is None:
             raise ValueError("tool_manager is required when tools are provided")
@@ -83,17 +83,19 @@ Provide only the direct answer to what was asked.
         # Build system content efficiently - avoid string ops when possible
         system_content = (
             f"{self.SYSTEM_PROMPT}\n\nPrevious conversation:\n{conversation_history}"
-            if conversation_history 
+            if conversation_history
             else self.SYSTEM_PROMPT
         )
-        
+
         messages = [{"role": "user", "content": query}]
 
         # Get response from Claude
         response = self._create(messages, system_content, tools)
 
         # Keep going while Claude asks for tools (bounded by MAX_TOOL_ROUNDS)
-        return self._run_tool_loop(response, messages, system_content, tools, tool_manager)
+        return self._run_tool_loop(
+            response, messages, system_content, tools, tool_manager
+        )
 
     def _create(self, messages: list, system: str, tools: Optional[List] = None):
         """Make one API request. Tools are offered only when given.
@@ -110,8 +112,9 @@ Provide only the direct answer to what was asked.
             params["tool_choice"] = {"type": "auto"}
         return self.client.messages.create(**params)
 
-    def _run_tool_loop(self, response, messages: list, system: str,
-                       tools: Optional[List], tool_manager) -> str:
+    def _run_tool_loop(
+        self, response, messages: list, system: str, tools: Optional[List], tool_manager
+    ) -> str:
         """Execute tool requests round by round until Claude answers in text.
 
         Each round is a separate API request, so Claude sees earlier results before
@@ -150,11 +153,12 @@ Provide only the direct answer to what was asked.
                 }
                 try:
                     result_block["content"] = tool_manager.execute_tool(
-                        content_block.name,
-                        **content_block.input
+                        content_block.name, **content_block.input
                     )
                 except Exception as e:
-                    result_block["content"] = f"Error executing tool '{content_block.name}': {e}"
+                    result_block["content"] = (
+                        f"Error executing tool '{content_block.name}': {e}"
+                    )
                     result_block["is_error"] = True
                     had_error = True
                 tool_results.append(result_block)
