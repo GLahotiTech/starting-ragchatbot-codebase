@@ -135,6 +135,25 @@ def tool_use_response(name="search_course_content", tool_input=None, tool_id="to
 
 
 @pytest.fixture
+def api(monkeypatch):
+    """Yields (TestClient, fake_rag): the real app.py wired to a fake RAGSystem.
+
+    app.py builds a RAGSystem at import time and mounts ../frontend, so RAGSystem is
+    patched before a fresh import, and cwd is backend/. TestClient is used WITHOUT a
+    `with` block so the startup (doc ingestion) hook never runs.
+    """
+    from fastapi.testclient import TestClient
+
+    fake_rag = MagicMock()
+    monkeypatch.setattr("rag_system.RAGSystem", lambda cfg: fake_rag)
+    monkeypatch.chdir(BACKEND_DIR)
+    sys.modules.pop("app", None)
+    import app
+    yield TestClient(app.app), fake_rag
+    sys.modules.pop("app", None)
+
+
+@pytest.fixture
 def mock_anthropic(monkeypatch):
     """Replace anthropic.Anthropic with a fake so AIGenerator never touches the network.
 
