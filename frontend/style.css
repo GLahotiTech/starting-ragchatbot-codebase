@@ -146,9 +146,11 @@ body {
     padding: 0;
 }
 
-/* Header - Hidden */
+/* Header */
 header {
-    display: none;
+    padding: 1rem 4rem 1rem 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-color);
 }
 
 header h1 {
@@ -164,7 +166,7 @@ header h1 {
 .subtitle {
     font-size: 0.95rem;
     color: var(--text-secondary);
-    margin-top: 0.5rem;
+    margin-top: 0.25rem;
 }
 
 /* Main Content Area with Sidebar */
